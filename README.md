@@ -1,6 +1,6 @@
 # Spotify Optimiser
-Checks if you skip or finnish the songs that you listen to.  
-If you finnish it, the song will be added to a playlist, in order to create an _optimised_ playlist.
+Checks if you skip or finish the songs that you listen to.  
+If you finish it, the song will be added to a playlist, in order to create an _optimised_ playlist.
 
 **Example**:
 ```
