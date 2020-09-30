@@ -1,6 +1,10 @@
 import spotipy
+
 import authentication
+from playlist import Playlist
+
 from time import sleep
+import datetime
 
 SCOPE = "user-read-playback-state, playlist-modify-private"
 
@@ -8,6 +12,10 @@ if __name__ == '__main__':
     # Login to Spotify
     auth = authentication.get_authentication(SCOPE)
     sp = spotipy.Spotify(auth_manager=auth)
+
+    # Create a new playlist
+    playlist = Playlist(sp, "Spotify Optimiser " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    print("Started session and created a new playlist")
 
     # Main loop:
     while True:
@@ -37,6 +45,7 @@ if __name__ == '__main__':
 
         # If the track did not finish, it must've been skipped, thus we do not add it to our playlist
         if finished:
-            print("Finished")
+            print("   Finished, adding to playlist")
+            playlist.add(track_id)
         else:
-            print("Skipped")
+            print("   Skipped, not adding")
