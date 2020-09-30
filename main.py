@@ -2,7 +2,7 @@ import spotipy
 import authentication
 from time import sleep
 
-SCOPE = "user-read-playback-state, user-read-recently-played"
+SCOPE = "user-read-playback-state, playlist-modify-private"
 
 if __name__ == '__main__':
     # Login to Spotify
