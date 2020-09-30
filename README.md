@@ -2,7 +2,7 @@
 Checks if you skip or finnish the songs that you listen to.  
 If you finnish it, the song will be added to a playlist, in order to create an _optimised_ playlist.
 
-####Example:
+**Example**:
 ```
 Connecting to Spotify
 Do you want to use the same playlist as last time? [Y/n]n
