@@ -1,21 +1,26 @@
 import spotipy
 
 import authentication
-from playlist import Playlist
+import playlist as pl
+import functions
 
 from time import sleep
-import datetime
 
 SCOPE = "user-read-playback-state, playlist-modify-private"
+PLAYLIST_FILE = "playlist.pkl"
 
 if __name__ == '__main__':
     # Login to Spotify
+    print("Connecting to Spotify")
     auth = authentication.get_authentication(SCOPE)
     sp = spotipy.Spotify(auth_manager=auth)
 
-    # Create a new playlist
-    playlist = Playlist(sp, "Spotify Optimiser " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
-    print("Started session and created a new playlist")
+    # If there is a playlist to restore but the user does not want to, force a new playlist
+    force = pl.detect_saved_playlist(PLAYLIST_FILE) \
+        and not functions.get_bool("Do you want to use the same playlist as last time?")
+
+    playlist, created = pl.load_playlist(PLAYLIST_FILE, sp, force)
+    print("Started session " + ("and created a new playlist" if created else "with the same playlist"))
 
     # Main loop:
     while True:
