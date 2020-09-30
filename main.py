@@ -23,41 +23,45 @@ if __name__ == '__main__':
     print("Started session " + ("and created a new playlist" if created else "with the same playlist"))
 
     # Main loop:
-    while True:
-        # Wait until the user starts playing something
-        x = True
+    try:
         while True:
-            playback = sp.current_playback()
-            if playback and playback['is_playing']:
-                break
-            if x:
-                print("Waiting until playback starts...")
-                x = False
-
-        # Get current track info
-        current = sp.current_playback()
-        track_id = current['item']['id']
-        artists = ", ".join([a['name'] for a in current['item']['artists']])
-        print("Now playing: {artist} - {title}".format(artist=artists, title=current['item']['name']))
-
-        finished = False
-        # Wait until track changes (either skip or end of song)
-        try:
-            while (p := sp.current_playback())['item']['id'] == track_id:
-                # Calculate how long it takes until the end of the track
-                time_left = p['item']['duration_ms'] - p['progress_ms']
-                # If we are in the last few seconds of the track, we count it as not skipped
-                if time_left <= 5000:
-                    finished = True
-                # Wait a second (to improve performance)
+            # Wait until the user starts playing something
+            x = True
+            while True:
+                playback = sp.current_playback()
+                if playback and playback['is_playing'] and playback['item']:
+                    break
+                if x:
+                    print("Waiting until playback starts...")
+                    x = False
                 sleep(1)
-        except TypeError:
-            # If playback stops (client disconnects) sp.current_playback will be None
-            continue  # Go back to waiting
 
-        # If the track did not finish, it must've been skipped, thus we do not add it to our playlist
-        if finished:
-            print("   Finished, adding to playlist")
-            playlist.add(track_id)
-        else:
-            print("   Skipped, not adding")
+            # Get current track info
+            current = sp.current_playback()
+            track_id = current['item']['id']
+            artists = ", ".join([a['name'] for a in current['item']['artists']])
+            print("Now playing: {artist} - {title}".format(artist=artists, title=current['item']['name']))
+
+            finished = False
+            # Wait until track changes (either skip or end of song)
+            try:
+                while (p := sp.current_playback())['item']['id'] == track_id:
+                    # Calculate how long it takes until the end of the track
+                    time_left = p['item']['duration_ms'] - p['progress_ms']
+                    # If we are in the last few seconds of the track, we count it as not skipped
+                    if time_left <= 5000:
+                        finished = True
+                    # Wait a second (to improve performance)
+                    sleep(1)
+            except TypeError:
+                # If playback stops (client disconnects) sp.current_playback will be None
+                continue  # Go back to waiting
+
+            # If the track did not finish, it must've been skipped, thus we do not add it to our playlist
+            if finished:
+                print("   Finished, adding to playlist")
+                playlist.add(track_id)
+            else:
+                print("   Skipped, not adding")
+    except KeyboardInterrupt:
+        pass
