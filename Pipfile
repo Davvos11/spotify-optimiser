@@ -7,7 +7,6 @@ verify_ssl = true
 
 [packages]
 spotipy = "*"
-pickle = "*"
 
 [requires]
 python_version = "3.8"
