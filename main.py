@@ -1,8 +1,11 @@
+import traceback
+
 import spotipy
 
 import authentication
 import playlist as pl
 import functions
+from webserver import Server
 
 from time import sleep
 
@@ -12,6 +15,7 @@ PLAYLIST_FILE = "playlist.pkl"
 if __name__ == '__main__':
     # Login to Spotify
     print("Connecting to Spotify")
+    server.queue.put("Connecting to Spotify")
     auth = authentication.get_authentication(SCOPE)
     sp = spotipy.Spotify(auth_manager=auth)
 
@@ -21,19 +25,21 @@ if __name__ == '__main__':
 
     playlist, created = pl.load_playlist(PLAYLIST_FILE, sp, force)
     print("Started session " + ("and created a new playlist" if created else "with the same playlist"))
+    server.queue.put("Started session " + ("and created a new playlist" if created else "with the same playlist"))
 
     # Main loop:
     try:
         while True:
             # Wait until the user starts playing something
-            x = True
+            playing = True
             while True:
                 playback = sp.current_playback()
                 if playback and playback['is_playing'] and playback['item']:
                     break
-                if x:
+                if playing:
                     print("Waiting until playback starts...")
-                    x = False
+                    server.queue.put("Waiting until playback starts...")
+                    playing = False
                 sleep(1)
 
             # Get current track info
@@ -41,6 +47,7 @@ if __name__ == '__main__':
             track_id = current['item']['id']
             artists = ", ".join([a['name'] for a in current['item']['artists']])
             print("Now playing: {artist} - {title}".format(artist=artists, title=current['item']['name']))
+            server.queue.put("Now playing: {artist} - {title}".format(artist=artists, title=current['item']['name']))
 
             finished = False
             # Wait until track changes (either skip or end of song)
@@ -60,8 +67,10 @@ if __name__ == '__main__':
             # If the track did not finish, it must've been skipped, thus we do not add it to our playlist
             if finished:
                 print("   Finished, adding to playlist")
+                server.queue.put("   Finished, adding to playlist")
                 playlist.add(track_id)
             else:
                 print("   Skipped, not adding")
+                server.queue.put("   Skipped, not adding")
     except KeyboardInterrupt:
         pass
