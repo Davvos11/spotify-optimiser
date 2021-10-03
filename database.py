@@ -41,7 +41,7 @@ def add_user_token(username: str, token: str):
         User.create(username=username, token=token)
     except IntegrityError:
         # If the user already exists, update it
-        query = User.update(token=token).where(User,username == username)
+        query = User.update(token=token).where(User, username == username)
         query.execute()
 
 
@@ -63,7 +63,6 @@ def start_song(username: str, playlist_uri: Optional[str], track_id: str) -> Son
     try:
         # Create an instance and return it
         song = SongInstance.create(user=user, playlist_uri=playlist_uri, track_id=track_id)
-        song.save()
         return song
     except IntegrityError:
         # If the song instance already exists, update it
@@ -74,7 +73,10 @@ def start_song(username: str, playlist_uri: Optional[str], track_id: str) -> Son
                   )
         query.execute()
         # Return the instance
-        return SongInstance.get(user=user, playlist_uri=playlist_uri, track_id=track_id)
+        return SongInstance.get(SongInstance.user == user,
+                                SongInstance.playlist_uri == playlist_uri,
+                                SongInstance.track_id == track_id
+                                )
 
 
 def skip_song(song_instance: SongInstance):

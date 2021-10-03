@@ -1,73 +1,51 @@
-import traceback
+from typing import Dict
+
 import spotipy
+from flask import Flask, session, redirect, request
+from flask_restful import Resource, Api
 
-import authentication
+# Create a Flask server
+from authentication import get_authentication, get_spotipy, get_new_token
 
-from time import sleep
+app = Flask(__name__)
+app.config.update(SECRET_KEY='$@F3br3YgGYDRX',
+                  ENV='development'
+                  )
+api = Api(app)
 
-from database import start_song, skip_song
 
-SCOPE = "user-read-playback-state, playlist-modify-private"
-USERNAME = "username"
+class Login(Resource):
+    @staticmethod
+    def get():
+        auth = get_authentication()
+        # Redirect the user
+        redirect_uri = auth.get_authorize_url()
+        return redirect(redirect_uri)
 
 
-def main():
-    # Login to Spotify
-    print("Connecting to Spotify")
-    auth = authentication.get_authentication(SCOPE, USERNAME)
-    sp = spotipy.Spotify(auth_manager=auth)
+class Callback(Resource):
+    @staticmethod
+    def get():
+        session.clear()
+        # Get the code and oauth token
+        code = request.args.get('code')
+        token = get_new_token(code)
+        # Store in the session
+        session["token"] = token
+        return redirect("/")
 
-    # Main loop:
-    try:
-        while True:
-            # Wait until the user starts playing something
-            x = True
-            while True:
-                playback = sp.current_playback()
-                if playback and playback['is_playing'] and playback['item']:
-                    break
-                if x:
-                    print("Waiting until playback starts...")
-                    x = False
-                sleep(1)
 
-            # Get current track info
-            current = sp.current_playback()
-            track_id = current['item']['id']
-            artists = ", ".join([a['name'] for a in current['item']['artists']])
-            playlist_uri = current['context']['uri']\
-                if current['context']['type'] == 'playlist' else None
-            print(f"Now playing: {artists} - {current['item']['name']}")
+class Test(Resource):
+    @staticmethod
+    def get():
+        sp = get_spotipy(session)
+        return sp.current_user()
 
-            # Update the database (start of a song)
-            # TODO fix USERNAME, use session or something
-            song = start_song(USERNAME, playlist_uri, track_id)
 
-            finished = False
-            # Wait until track changes (either skip or end of song)
-            try:
-                while (playback := sp.current_playback())['item']['id'] == track_id:
-                    # Calculate how long it takes until the end of the track
-                    time_left = playback['item']['duration_ms'] - playback['progress_ms']
-                    # If we are in the last few seconds of the track, we count it as not skipped
-                    if time_left <= 5000:
-                        finished = True
-                    # Wait a second (to improve performance)
-                    sleep(1)
-            except TypeError:
-                # If playback stops (client disconnects) sp.current_playback will be None
-                continue  # Go back to waiting
-
-            # If the track did not finish, it must've been skipped, thus we update the database
-            if not finished:
-                skip_song(song)
-
-    except KeyboardInterrupt:
-        pass
-    except Exception:
-        traceback.print_exc()
-        main()
-
+api.add_resource(Login, "/login")
+api.add_resource(Callback, "/callback")
+api.add_resource(Test, "/")
 
 if __name__ == '__main__':
-    main()
+    app.run(debug=True, port=8080)
+

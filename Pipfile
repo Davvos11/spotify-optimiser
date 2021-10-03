@@ -8,6 +8,8 @@ verify_ssl = true
 [packages]
 spotipy = "*"
 peewee = "*"
+flask = "*"
+flask-restful = "*"
 
 [requires]
 python_version = "3.9"

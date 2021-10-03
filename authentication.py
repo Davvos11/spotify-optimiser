@@ -1,10 +1,11 @@
-import json
+import time
 
-from spotipy import CacheHandler
+import flask
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-from database import get_user_token, add_user_token
-
+SCOPE = "user-read-playback-state, playlist-modify-private"
+REDIRECT_URI = "http://localhost:8080/callback"
 SECRETS_FILE = 'secrets.txt'
 
 
@@ -15,32 +16,48 @@ def get_secrets() -> (str, str):
     return client_id, client_secret
 
 
-def get_authentication(scope: str, username: str) -> SpotifyOAuth:
-    # Get client ID and secret
-    secrets = get_secrets()
+SECRETS = get_secrets()
 
-    # Get cache handler
-    ch = DatabaseCacheHandler(username)
 
+def get_authentication() -> SpotifyOAuth:
     # Get Authentication object
-    return SpotifyOAuth(scope=scope,
-                        client_id=secrets[0],
-                        client_secret=secrets[1],
-                        redirect_uri="http://localhost:8080",
-                        cache_handler=ch
+    return create_oauth()
+
+
+def get_new_token(code: str):
+    oauth = create_oauth()
+
+    return oauth.get_access_token(code)
+
+
+# Checks to see if token is valid and gets a new token if not
+def get_spotipy(session: flask.session):
+    token = session.get("token", {})
+
+    # Checking if the session already has a token stored
+    if session.get('token', False):
+        # Checking if token has expired
+        now = int(time.time())
+        is_token_expired = session.get('token').get('expires_at') - now < 60
+
+        # Refreshing token if it has expired
+        if is_token_expired:
+            # Don't reuse a SpotifyOAuth object because they store token info and you could leak user tokens if you
+            # reuse a SpotifyOAuth object
+            sp_oauth = create_oauth()
+            token = sp_oauth.refresh_access_token(session.get('token').get('refresh_token'))
+
+        # Update the session
+        session["token"] = token
+
+    # Return the Spotipy object
+    return spotipy.Spotify(auth=session.get('token').get('access_token'))
+
+
+def create_oauth():
+    return SpotifyOAuth(scope=SCOPE,
+                        client_id=SECRETS[0],
+                        client_secret=SECRETS[1],
+                        redirect_uri=REDIRECT_URI,
+                        open_browser=False
                         )
-
-
-class DatabaseCacheHandler(CacheHandler):
-    def __init__(self, username: str):
-        self.username = username
-
-    def get_cached_token(self):
-        token = get_user_token(self.username)
-        if token is None:
-            return None
-        return json.loads(token)
-
-    def save_token_to_cache(self, token_info):
-        add_user_token(self.username, json.dumps(token_info))
-
