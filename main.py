@@ -1,3 +1,4 @@
+import traceback
 import spotipy
 
 import authentication
@@ -9,7 +10,8 @@ from time import sleep
 SCOPE = "user-read-playback-state, playlist-modify-private"
 PLAYLIST_FILE = "playlist.pkl"
 
-if __name__ == '__main__':
+
+def main():
     # Login to Spotify
     print("Connecting to Spotify")
     auth = authentication.get_authentication(SCOPE)
@@ -65,3 +67,10 @@ if __name__ == '__main__':
                 print("   Skipped, not adding")
     except KeyboardInterrupt:
         pass
+    except Exception:
+        traceback.print_exc()
+        main()
+
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,5 @@
 # Source it from the python dockerfile
-FROM python:3.8.5
+FROM python:3.9
 # Copy over the current directory structure, make sure token.txt exists!
 COPY . /spotify-optimiser
 
