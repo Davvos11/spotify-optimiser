@@ -1,3 +1,2 @@
 secrets.txt
-.cache
-playlist.pkl
+/database.sqlite
