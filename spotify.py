@@ -1,5 +1,6 @@
 import threading
 import traceback
+from typing import Set
 
 import spotipy
 
@@ -8,6 +9,8 @@ from time import sleep
 from database import start_song, skip_song, get_user
 
 SCOPE = "user-read-playback-state, playlist-modify-private"
+
+listening_to: Set[int] = set()
 
 
 def listen(sp: spotipy.Spotify):
@@ -18,6 +21,10 @@ def listen(sp: spotipy.Spotify):
         user = get_user(user_id)
         if not user.enabled:
             return
+        # Check if we are not already listening to this user
+        if user_id in listening_to:
+            return
+        listening_to.add(user_id)
 
         # Main loop:
         while True:
