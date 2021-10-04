@@ -1,24 +1,25 @@
+import threading
 import traceback
-import spotipy
 
-import authentication
+import spotipy
 
 from time import sleep
 
-from database import start_song, skip_song
+from database import start_song, skip_song, get_user
 
 SCOPE = "user-read-playback-state, playlist-modify-private"
-USERNAME = "username"
 
 
-def main():
-    # Login to Spotify
-    print("Connecting to Spotify")
-    auth = authentication.get_authentication(SCOPE, USERNAME)
-    sp = spotipy.Spotify(auth_manager=auth)
-
-    # Main loop:
+def listen(sp: spotipy.Spotify):
     try:
+        # Get the current user id
+        user_id = sp.current_user()["id"]
+        # Check if the user is not disabled
+        user = get_user(user_id)
+        if not user.enabled:
+            return
+
+        # Main loop:
         while True:
             # Wait until the user starts playing something
             x = True
@@ -27,7 +28,7 @@ def main():
                 if playback and playback['is_playing'] and playback['item']:
                     break
                 if x:
-                    print("Waiting until playback starts...")
+                    print(f"{user_id}: Waiting until playback starts...")
                     x = False
                 sleep(1)
 
@@ -35,13 +36,12 @@ def main():
             current = sp.current_playback()
             track_id = current['item']['id']
             artists = ", ".join([a['name'] for a in current['item']['artists']])
-            playlist_uri = current['context']['uri']\
+            playlist_uri = current['context']['uri'] \
                 if current['context']['type'] == 'playlist' else None
-            print(f"Now playing: {artists} - {current['item']['name']}")
+            print(f"{user_id}: Now playing: {artists} - {current['item']['name']}")
 
             # Update the database (start of a song)
-            # TODO fix USERNAME, use session or something
-            song = start_song(USERNAME, playlist_uri, track_id)
+            song = start_song(user_id, playlist_uri, track_id)
 
             finished = False
             # Wait until track changes (either skip or end of song)
@@ -62,13 +62,11 @@ def main():
             if not finished:
                 skip_song(song)
 
-    except KeyboardInterrupt:
-        pass
     except Exception:
         traceback.print_exc()
-        main()
+        # listen(sp)
 
 
-if __name__ == '__main__':
-    main()
+def start_listening(sp: spotipy.Spotify):
+    threading.Thread(target=listen, args=[sp]).start()
 

@@ -4,6 +4,8 @@ import flask
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
+from database import replace_token, add_token
+
 SCOPE = "user-read-playback-state, playlist-modify-private"
 REDIRECT_URI = "http://localhost:8080/callback"
 SECRETS_FILE = 'secrets.txt'
@@ -36,22 +38,26 @@ def get_spotipy(session: flask.session):
 
     # Checking if the session already has a token stored
     if session.get('token', False):
-        # Checking if token has expired
-        now = int(time.time())
-        is_token_expired = session.get('token').get('expires_at') - now < 60
-
-        # Refreshing token if it has expired
-        if is_token_expired:
-            # Don't reuse a SpotifyOAuth object because they store token info and you could leak user tokens if you
-            # reuse a SpotifyOAuth object
-            sp_oauth = create_oauth()
-            token = sp_oauth.refresh_access_token(session.get('token').get('refresh_token'))
-
+        sp = get_spotipy_from_token(session.get('token'))
         # Update the session
-        session["token"] = token
+        set_token(session, token)
+        return sp
+
+
+def get_spotipy_from_token(token):
+    # Checking if token has expired
+    now = int(time.time())
+    is_token_expired = token.get('expires_at') - now < 60
+
+    # Refreshing token if it has expired
+    if is_token_expired:
+        # Don't reuse a SpotifyOAuth object because they store token info and you could leak user tokens if you
+        # reuse a SpotifyOAuth object
+        sp_oauth = create_oauth()
+        token = sp_oauth.refresh_access_token(token.get('refresh_token'))
 
     # Return the Spotipy object
-    return spotipy.Spotify(auth=session.get('token').get('access_token'))
+    return spotipy.Spotify(auth=token.get('access_token'))
 
 
 def create_oauth():
@@ -61,3 +67,12 @@ def create_oauth():
                         redirect_uri=REDIRECT_URI,
                         open_browser=False
                         )
+
+
+def set_token(session: flask.session, token):
+    if "token" in session:
+        replace_token(session["token"], token)
+    else:
+        add_token(token)
+    session["token"] = token
+
