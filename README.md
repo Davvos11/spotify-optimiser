@@ -21,3 +21,7 @@ Now playing: The 5th Dimension - Let The Sunshine In (Reprise) - Remastered 2000
 ```
 Which results in:  
 ![Result](https://i.imgur.com/78J33AY.png)
+
+# Running
+Create a file called `secrets.txt` with your client ID on the first line and your client secret on the second  
+These can be obtained from the [Spotify developer dashboard](https://developer.spotify.com/dashboard/applications)
