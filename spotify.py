@@ -70,3 +70,26 @@ def listen(sp: spotipy.Spotify):
 def start_listening(sp: spotipy.Spotify):
     threading.Thread(target=listen, args=[sp]).start()
 
+
+def get_song_info(sp: spotipy.Spotify, ids: [str]):
+    result = []
+    for track in sp.tracks(tracks=ids)["tracks"]:
+        result.append({
+            "name": track["name"],
+            "artist": ", ".join([artist["name"] for artist in track["artists"]]),
+            "img": track["album"]["images"][0]["url"],
+            "uri": track["external_urls"]["spotify"]
+        })
+    return result
+
+
+def get_playlist_info(sp: spotipy.Spotify, ids: [str]):
+    result = []
+    for pid in ids:
+        playlist = sp.playlist(pid)
+        result.append({
+            "name": playlist["name"],
+            "img": playlist["images"][0]["url"]
+        })
+    return result
+

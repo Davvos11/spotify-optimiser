@@ -2,6 +2,7 @@ import json
 from typing import Optional
 
 from peewee import *
+from playhouse.shortcuts import model_to_dict
 
 db = SqliteDatabase('database.sqlite')
 
@@ -101,3 +102,9 @@ def skip_song(song_instance: SongInstance):
               SongInstance.track_id == song_instance.track_id
               )
     query.execute()
+
+
+def get_skip_stats(user_id: int):
+    user = User.get(User.user_id == user_id)
+    items = SongInstance.select().where(SongInstance.user == user)
+    return [model_to_dict(item) for item in items]

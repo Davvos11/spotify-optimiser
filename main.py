@@ -3,8 +3,8 @@ from flask_restful import Resource, Api
 
 # Create a Flask server
 from authentication import get_authentication, get_spotipy, get_new_token, set_token, get_spotipy_from_token
-from database import get_tokens
-from spotify import start_listening
+from database import get_tokens, get_skip_stats
+from spotify import start_listening, get_song_info, get_playlist_info
 
 app = Flask(__name__)
 app.config.update(SECRET_KEY='$@F3br3YgGYDRX',
@@ -35,6 +35,10 @@ class Callback(Resource):
 
 
 class AuthResource(Resource):
+    def __init__(self):
+        if "token" in session:
+            self.sp = get_spotipy(session)
+
     def dispatch_request(self, *args, **kwargs):
         # Check if there is a session token
         if "token" in session:
@@ -46,24 +50,41 @@ class AuthResource(Resource):
 
 
 class Test(AuthResource):
-    @staticmethod
-    def get():
-        sp = get_spotipy(session)
-        return sp.current_user()
+    def get(self):
+        return self.sp.current_user()
 
 
 class Enable(AuthResource):
-    @staticmethod
-    def get():
-        sp = get_spotipy(session)
-        start_listening(sp)
+    def get(self):
+        start_listening(self.sp)
         return None
+
+
+class Stats(AuthResource):
+    def get(self):
+        user_id = self.sp.current_user()["id"]
+        return get_skip_stats(user_id)
+
+
+class Songs(AuthResource):
+    def get(self):
+        ids = request.args.get('ids').split(",")
+        return get_song_info(self.sp, ids)
+
+
+class Playlists(AuthResource):
+    def get(self):
+        ids = request.args.get('ids').split(",")
+        return get_playlist_info(self.sp, ids)
 
 
 api.add_resource(Login, "/login")
 api.add_resource(Callback, "/callback")
-api.add_resource(Test, "/")
+api.add_resource(Test, "/test")
 api.add_resource(Enable, "/enable")
+api.add_resource(Stats, "/stats")
+api.add_resource(Songs, "/songs")
+api.add_resource(Playlists, "/playlists")
 
 
 def main():
