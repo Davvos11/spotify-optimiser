@@ -37,14 +37,15 @@ def listen(sp: spotipy.Spotify):
                 if x:
                     print(f"{user_id}: Waiting until playback starts...")
                     x = False
-                sleep(1)
+                sleep(10)
 
             # Get current track info
             current = sp.current_playback()
             track_id = current['item']['id']
             artists = ", ".join([a['name'] for a in current['item']['artists']])
-            playlist_uri = current['context']['uri'] \
-                if current['context']['type'] == 'playlist' else None
+            if current['context'] is not None and current['context']['type'] == 'playlist':
+                # If we changed to a new playlist, update the playlist
+                playlist_uri = current['context']['uri']
             print(f"{user_id}: Now playing: {artists} - {current['item']['name']}")
 
             # Update the database (start of a song)
@@ -100,3 +101,16 @@ def get_playlist_info(sp: spotipy.Spotify, ids: [str]):
         })
     return result
 
+
+def add_to_playlist(sp: spotipy.Spotify, song_ids: [str], playlist_id: str):
+    sp.playlist_add_items(playlist_id, [f"spotify:track:{sid}" for sid in song_ids])
+
+
+def remove_from_playlist(sp: spotipy.Spotify, song_ids: [str], playlist_id: str):
+    sp.playlist_remove_all_occurrences_of_items(playlist_id, [f"spotify:track:{sid}" for sid in song_ids])
+
+
+def add_to_new_playlist(sp: spotipy.Spotify, song_ids: [str], name: str):
+    query = sp.user_playlist_create(sp.me()["id"], name)
+    playlist_id = query["id"]
+    add_to_playlist(sp, song_ids, playlist_id)

@@ -6,7 +6,7 @@ from spotipy.oauth2 import SpotifyOAuth
 
 from database import replace_token, add_token
 
-SCOPE = "user-read-playback-state, playlist-modify-private, playlist-read-private"
+SCOPE = "user-read-playback-state, playlist-modify-private, playlist-read-private, playlist-modify-public"
 REDIRECT_URI = "http://localhost:8080/callback"
 SECRETS_FILE = 'secrets.txt'
 

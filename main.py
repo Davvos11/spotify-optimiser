@@ -1,10 +1,11 @@
 from flask import Flask, session, redirect, request
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 
 # Create a Flask server
 from authentication import get_authentication, get_spotipy, get_new_token, set_token, get_spotipy_from_token
 from database import get_tokens, get_skip_stats
-from spotify import start_listening, get_song_info, get_playlist_info
+from spotify import start_listening, get_song_info, get_playlist_info, add_to_playlist, remove_from_playlist, \
+    add_to_new_playlist
 
 app = Flask(__name__)
 app.config.update(SECRET_KEY='$@F3br3YgGYDRX',
@@ -31,7 +32,7 @@ class Callback(Resource):
         token = get_new_token(code)
         # Store in the session
         set_token(session, token)
-        return redirect("/")
+        return redirect("/test")
 
 
 class AuthResource(Resource):
@@ -57,7 +58,7 @@ class Test(AuthResource):
 class Enable(AuthResource):
     def get(self):
         start_listening(self.sp)
-        return None
+        return '', 204
 
 
 class Stats(AuthResource):
@@ -78,6 +79,38 @@ class Playlists(AuthResource):
         return get_playlist_info(self.sp, ids)
 
 
+apply_parser = reqparse.RequestParser()
+apply_parser.add_argument('playlist', type=str, help='Spotify playlist ID')
+apply_parser.add_argument('songs', type=str, help='Spotify song IDs')
+apply_parser.add_argument('name', type=str, help='Name of the new playlist')
+
+
+class ApplyChanges(AuthResource):
+    def put(self):
+        """ Add songs to existing playlist """
+        args = apply_parser.parse_args()
+        song_ids = args['songs'].split(",")
+        playlist_id = args['playlist']
+        add_to_playlist(self.sp, song_ids, playlist_id)
+        return '', 204
+
+    def delete(self):
+        """ Remove songs from playlist """
+        args = apply_parser.parse_args()
+        song_ids = args['songs'].split(",")
+        playlist_id = args['playlist']
+        remove_from_playlist(self.sp, song_ids, playlist_id)
+        return '', 204
+
+    def post(self):
+        """ Add songs to new playlist """
+        args = apply_parser.parse_args()
+        song_ids = args['songs'].split(",")
+        name = args['name']
+        add_to_new_playlist(self.sp, song_ids, name)
+        return '', 204
+
+
 api.add_resource(Login, "/login")
 api.add_resource(Callback, "/callback")
 api.add_resource(Test, "/test")
@@ -85,6 +118,7 @@ api.add_resource(Enable, "/enable")
 api.add_resource(Stats, "/stats")
 api.add_resource(Songs, "/songs")
 api.add_resource(Playlists, "/playlists")
+api.add_resource(ApplyChanges, "/apply")
 
 
 def main():
