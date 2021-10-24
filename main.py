@@ -3,7 +3,7 @@ from flask_restful import Resource, Api, reqparse
 
 # Create a Flask server
 from authentication import get_authentication, get_spotipy, get_new_token, set_token, get_spotipy_from_token
-from database import get_tokens, get_skip_stats
+from database import get_tokens, get_skip_stats, ignore_entries, get_user
 from spotify import start_listening, get_song_info, get_playlist_info, add_to_playlist, remove_from_playlist, \
     add_to_new_playlist
 
@@ -56,9 +56,14 @@ class Test(AuthResource):
 
 
 class Enable(AuthResource):
-    def get(self):
+    def post(self):
         start_listening(self.sp)
         return '', 204
+
+    def get(self):
+        user_id = self.sp.current_user()["id"]
+        user = get_user(user_id)
+        return user.enabled
 
 
 class Stats(AuthResource):

@@ -26,6 +26,8 @@ def listen(sp: spotipy.Spotify):
             return
         listening_to.add(user_id)
 
+        playlist_id = None
+
         # Main loop:
         while True:
             # Wait until the user starts playing something
@@ -45,11 +47,11 @@ def listen(sp: spotipy.Spotify):
             artists = ", ".join([a['name'] for a in current['item']['artists']])
             if current['context'] is not None and current['context']['type'] == 'playlist':
                 # If we changed to a new playlist, update the playlist
-                playlist_uri = current['context']['uri']
+                playlist_id = current['context']['uri'].replace("spotify:playlist:", "")
             print(f"{user_id}: Now playing: {artists} - {current['item']['name']}")
 
             # Update the database (start of a song)
-            song = start_song(user_id, playlist_uri, track_id)
+            song = start_song(user_id, playlist_id, track_id)
 
             finished = False
             # Wait until track changes (either skip or end of song)
@@ -76,6 +78,11 @@ def listen(sp: spotipy.Spotify):
 
 
 def start_listening(sp: spotipy.Spotify):
+    # Ensure the user is enabled
+    user_id = sp.current_user()["id"]
+    user = get_user(user_id)
+    user.enabled = True
+    # Start a thread
     threading.Thread(target=listen, args=[sp]).start()
 
 
