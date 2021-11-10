@@ -6,7 +6,7 @@ import spotipy
 
 from time import sleep
 
-from database import start_song, skip_song, get_user
+from database import start_song, skip_song, get_user, enable_user
 
 SCOPE = "user-read-playback-state, playlist-modify-private"
 
@@ -27,6 +27,7 @@ def listen(sp: spotipy.Spotify):
         listening_to.add(user_id)
 
         playlist_id = None
+        playlist_title = ""
 
         # Main loop:
         while True:
@@ -45,13 +46,17 @@ def listen(sp: spotipy.Spotify):
             current = sp.current_playback()
             track_id = current['item']['id']
             artists = ", ".join([a['name'] for a in current['item']['artists']])
+            title = current['item']['name']
+            cover_art = current['item']['album']['images'][0]['url']
             if current['context'] is not None and current['context']['type'] == 'playlist':
                 # If we changed to a new playlist, update the playlist
                 playlist_id = current['context']['uri'].replace("spotify:playlist:", "")
-            print(f"{user_id}: Now playing: {artists} - {current['item']['name']}")
+                playlist = get_playlist_info(sp, [playlist_id])[0]
+                playlist_title = playlist['name']
+            print(f"{user_id}: Now playing: {artists} - {title}")
 
             # Update the database (start of a song)
-            song = start_song(user_id, playlist_id, track_id)
+            song = start_song(user_id, playlist_id, track_id, title, playlist_title, artists, cover_art)
 
             finished = False
             # Wait until track changes (either skip or end of song)
@@ -80,8 +85,7 @@ def listen(sp: spotipy.Spotify):
 def start_listening(sp: spotipy.Spotify):
     # Ensure the user is enabled
     user_id = sp.current_user()["id"]
-    user = get_user(user_id)
-    user.enabled = True
+    enable_user(user_id, True)
     # Start a thread
     threading.Thread(target=listen, args=[sp]).start()
 

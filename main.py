@@ -3,7 +3,7 @@ from flask_restful import Resource, Api, reqparse
 
 # Create a Flask server
 from authentication import get_authentication, get_spotipy, get_new_token, set_token, get_spotipy_from_token
-from database import get_tokens, get_skip_stats, ignore_entries, get_user
+from database import get_tokens, get_skip_stats, get_user
 from spotify import start_listening, get_song_info, get_playlist_info, add_to_playlist, remove_from_playlist, \
     add_to_new_playlist
 
@@ -30,9 +30,21 @@ class Callback(Resource):
         # Get the code and oauth token
         code = request.args.get('code')
         token = get_new_token(code)
+        # Get the user id
+        sp = get_spotipy_from_token(token)
+        user_id = sp.current_user()['id']
         # Store in the session
-        set_token(session, token)
-        return redirect("/test")
+        set_token(session, token, user_id)
+        return redirect("/")
+
+
+class CheckLogin(Resource):
+    @staticmethod
+    def get():
+        if "token" in session:
+            return '', 204
+        else:
+            return '', 401
 
 
 class AuthResource(Resource):
@@ -118,6 +130,7 @@ class ApplyChanges(AuthResource):
 
 api.add_resource(Login, "/login")
 api.add_resource(Callback, "/callback")
+api.add_resource(CheckLogin, "/checklogin")
 api.add_resource(Test, "/test")
 api.add_resource(Enable, "/enable")
 api.add_resource(Stats, "/stats")

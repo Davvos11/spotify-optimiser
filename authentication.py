@@ -40,7 +40,7 @@ def get_spotipy(session: flask.session):
     if session.get('token', False):
         sp = get_spotipy_from_token(session.get('token'))
         # Update the session
-        set_token(session, token)
+        set_token(session, token, sp.current_user()['id'])
         return sp
 
 
@@ -69,10 +69,10 @@ def create_oauth():
                         )
 
 
-def set_token(session: flask.session, token):
+def set_token(session: flask.session, token, user_id: int):
     if "token" in session:
-        replace_token(session["token"], token)
+        replace_token(session["token"], token, user_id)
     else:
-        add_token(token)
+        add_token(token, user_id)
     session["token"] = token
 

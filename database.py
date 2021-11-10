@@ -16,7 +16,7 @@ class BaseModel(Model):
 
 class User(BaseModel):
     user_id = IntegerField(primary_key=True)
-    enabled = BooleanField(default=True)
+    enabled = BooleanField(default=False)
 
 
 class Token(BaseModel):
@@ -29,6 +29,10 @@ class SongInstance(BaseModel):
     user = ForeignKeyField(User, backref='song_instances')
     playlist_id = CharField()
     track_id = CharField()
+    title = CharField()
+    playlist_title = CharField()
+    artists = CharField()
+    cover_art = CharField()
     listen_count = IntegerField(default=1)
     skip_count = IntegerField(default=0)
 
@@ -45,17 +49,17 @@ except OperationalError:
     pass
 
 
-def add_token(token):
-    try:
-        Token.create(token=token.get('access_token'), token_json=json.dumps(token))
-    except IntegrityError:
-        pass
+def add_token(token, user_id: int):
+    # try:
+    Token.create(token=token.get('access_token'), token_json=json.dumps(token), user_id=user_id)
+    # except IntegrityError:
+    #     pass
 
 
-def replace_token(old, new):
+def replace_token(old, new, user_id: int):
     query = Token.delete().where(Token.token == old.get('access_token'))
     query.execute()
-    add_token(new)
+    add_token(new, user_id)
 
 
 def get_tokens():
@@ -70,7 +74,8 @@ def get_user(user_id: int) -> User:
         return User.create(user_id=user_id)
 
 
-def start_song(user_id: int, playlist_id: Optional[str], track_id: str) -> SongInstance:
+def start_song(user_id: int, playlist_id: Optional[str], track_id: str,
+               title: str, playlist_title: str, artists: str, cover_art: str) -> SongInstance:
     # When we are not listening to a playlist, make the playlist field empty
     if playlist_id is None:
         playlist_id = ""
@@ -79,7 +84,8 @@ def start_song(user_id: int, playlist_id: Optional[str], track_id: str) -> SongI
 
     try:
         # Create an instance and return it
-        song = SongInstance.create(user=user, playlist_id=playlist_id, track_id=track_id)
+        song = SongInstance.create(user=user, playlist_id=playlist_id, track_id=track_id,
+                                   title=title, playlist_title=playlist_title, artists=artists, cover_art=cover_art)
         return song
     except IntegrityError:
         # If the song instance already exists, update it
@@ -121,3 +127,8 @@ def ignore_entries(song_ids: [str], playlist_id: str, user_id: int):
                   SongInstance.playlist_id == playlist_id,
                   SongInstance.track_id == song_id)
         query.execute()
+
+
+def enable_user(user_id: str, enabled: bool):
+    query = User.update(enabled=enabled).where(User.user_id == user_id)
+    query.execute()
