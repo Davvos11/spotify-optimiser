@@ -50,10 +50,11 @@ except OperationalError:
 
 
 def add_token(token, user_id: int):
-    # try:
-    Token.create(token=token.get('access_token'), token_json=json.dumps(token), user_id=user_id)
-    # except IntegrityError:
-    #     pass
+    try:
+        Token.create(token=token.get('access_token'), token_json=json.dumps(token), user_id=user_id)
+    except IntegrityError as e:
+        # TODO check what specific IntegrityError this is
+        print(e)
 
 
 def replace_token(old, new, user_id: int):

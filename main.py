@@ -103,6 +103,7 @@ apply_parser.add_argument('name', type=str, help='Name of the new playlist')
 
 
 class ApplyChanges(AuthResource):
+    # TODO remove / hide suggestion from db
     def put(self):
         """ Add songs to existing playlist """
         args = apply_parser.parse_args()
