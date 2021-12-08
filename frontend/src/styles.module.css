@@ -1,0 +1,53 @@
+.song {
+    display: flex;
+    justify-content: space-between;
+}
+
+.song .coverArt img{
+    height: 4em;
+}
+
+.song .songInformation {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+/* Song title */
+.song .songInformation span:nth-child(1) {
+
+}
+
+/* Song artists */
+.song .songInformation span:nth-child(2) {
+    font-size: 0.8em;
+}
+
+.song .songStats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.song .songStats span {
+    font-size: 0.6em;
+}
+
+.song button.remove {
+
+}
+
+.song button.remove.marked {
+    background-color: red;
+}
+
+.song button.add {
+
+}
+
+.song button.add.marked {
+
+}
